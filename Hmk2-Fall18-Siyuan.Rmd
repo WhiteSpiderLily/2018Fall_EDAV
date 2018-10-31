@@ -1,0 +1,251 @@
+---
+title: 'Homework #2'
+author: "Siyuan Shi - ss5620"
+date: "October 5, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE,
+                      message = FALSE, 
+                      cache = TRUE)
+library(tidyverse)
+```
+
+### 1. **Flowers**
+
+Data:  `flowers` dataset in  **cluster** package
+
+(a) Rename the column names and recode the levels of categorical variables to descriptive names. For example, "V1" should be renamed "winters" and the levels to "no" or "yes". Display the full dataset.
+
+```{r Q1 (a)}
+library('cluster')
+
+df_flower <- data.frame(flower, stringsAsFactors = FALSE)
+colnames(df_flower) <- c('winters', 'shadow', 'tubers', 'color', 'soil',
+                         'preference', 'height', 'distance')
+df_flower$winters <- as.character(df_flower$winters)
+df_flower$winters[df_flower$winters == 0] <- 'no'
+df_flower$winters[df_flower$winters == 1] <- 'yes'
+df_flower$winters <- as.factor(df_flower$winters)
+
+df_flower$shadow <- as.character(df_flower$shadow)
+df_flower$shadow[df_flower$shadow == 0] <- 'no'
+df_flower$shadow[df_flower$shadow == 1] <- 'yes'
+df_flower$shadow <- as.factor(df_flower$shadow)
+
+df_flower$tubers <- as.character(df_flower$tubers)
+df_flower$tubers[df_flower$tubers == 0] <- 'no'
+df_flower$tubers[df_flower$tubers == 1] <- 'yes'
+df_flower$tubers <- as.factor(df_flower$tubers)
+
+df_flower$color <- as.character(df_flower$color)
+df_flower$color[df_flower$color == 1] <- 'white'
+df_flower$color[df_flower$color == 2] <- 'yellow'
+df_flower$color[df_flower$color == 3] <- 'pink'
+df_flower$color[df_flower$color == 4] <- 'red'
+df_flower$color[df_flower$color == 5] <- 'blue'
+df_flower$color <- as.factor(df_flower$color)
+
+df_flower$soil <- as.character(df_flower$soil)
+df_flower$soil[df_flower$soil == 1] <- 'dry'
+df_flower$soil[df_flower$soil == 2] <- 'normal'
+df_flower$soil[df_flower$soil == 3] <- 'wet'
+df_flower$soil <- as.factor(df_flower$soil)
+df_flower$soil <- factor(df_flower$soil, ordered = TRUE, levels = c('dry', 'normal', 'wet'))
+
+print(df_flower)
+```
+(b) Create frequency bar charts for the `color` and `soil` variables, using best practices for the order of the bars.
+
+```{r Q1 (b)}
+g1_1 <- ggplot(df_flower, aes(x = reorder(color, color, length))) +
+  geom_bar(fill = 'lightgreen', color = 'black')
+g1_1
+
+g1_2 <- ggplot(df_flower, aes(soil)) +
+  geom_bar(fill = 'lightgreen', color = 'black')
+g1_2
+```
+
+* For the frequency bar chart of `color`, the `color` is ordered by the frequency from low to high to make it easy to compare, because `color` is a nominal factor.
+
+* For the frequency bar chart of `soil`, the `soil` is not ordered by the frequency, because `soil` is an ordinal factor and there are not many categories.
+
+\newpage
+### 2. Minneapolis
+
+Data: `MplsDemo` dataset in **carData** package
+
+(a) Create a Cleveland dot plot showing estimated median household income by neighborhood.
+
+```{r Q2 (a)}
+library(carData)
+df_MplsDemo <- MplsDemo
+g2_1 <- ggplot(df_MplsDemo, aes(x = reorder(neighborhood, hhIncome), y = hhIncome)) +
+  geom_point(color = 'blue') +
+  coord_flip() +
+  theme_bw(7)
+g2_1
+```
+(b) Create a Cleveland dot plot *with multiple dots* to show percentage of 1) foreign born, 2) earning less than twice the poverty level, and 3) with a college degree *by neighborhood.* Each of these three continuous variables should appear in a different color.  Data should be sorted by college degree.
+
+```{r Q2 (b)}
+g2_2 <- ggplot(df_MplsDemo) +
+  geom_point(aes(x = reorder(neighborhood, collegeGrad), y = foreignBorn), color = 'red') +
+  geom_point(aes(x = reorder(neighborhood, collegeGrad), y = poverty), color = 'blue') +
+  geom_point(aes(x = reorder(neighborhood, collegeGrad), y = collegeGrad), color = 'green') +
+  coord_flip() +
+  theme_bw(7) +
+  annotate('text', x = 18, y = 0.7, label = 'red - foreignBorn') +
+  annotate('text', x = 14, y = 0.7, label = 'blue - poverty') +
+  annotate('text', x = 10, y = 0.7, label = 'green - collegeGrad') +
+  labs(x = 'neighborhood', y = 'percentage')
+g2_2
+```
+
+(c) What patterns do you observe? What neighborhoods do not appear to follow these patterns?
+
+We can see that
+
+* The percentage of `collegeGrad` in each neighborhood varies the most dramatically, its range is roughly between 0.1 to 0.9. The fact that the green dots almost formed a straight line indicates that the distribution of the percentage of `collegeGrad` is almost random from 0.1 to 0.9. However, there seems to be a gap around 0.3, which may separate the neighborhood into two clusters.
+
+* The percentage of `foreignBorn` in each neighborhood varies between 0.05 and 0.4. Its detailed shape is unclear. We can observe that there is an anti-correlation between the rate of `foreignBorn` and `collegeGrad`.
+
+* The percentage of `poverty` varies the least among the three, its range is rougly between 0.04 and 0.1. There is little correlation between `poverty` and `collegeGrad`.
+
+\newpage
+### 3. Taxis
+
+Data: NYC yellow cab rides in June 2018, available here:  
+
+http://www.nyc.gov/html/tlc/html/about/trip_record_data.shtml
+
+It's a large file so work with a reasonably-sized random subset of the data.
+```{r Q3 get dataset}
+df_nyc <- read.csv('subset_nyc.csv')
+
+```
+I read a random subset (1000 observables) of the original file by using Python, where I write the subset dataframe to a csv file as `subset_nyc.csv`.
+
+Draw four scatterplots of `tip_amount` vs. `fare_amount` with the following variations:
+
+(a) Points with alpha blending
+```{r Q3 (a)}
+g3_1 <- ggplot(df_nyc, aes(tip_amount, fare_amount)) +
+  geom_point(alpha = 0.2, color = 'blue')
+g3_1
+```
+
+(b) Points with alpha blending + density estimate contour lines
+```{r Q3 (b)}
+g3_2 <- ggplot(df_nyc, aes(tip_amount, fare_amount)) +
+  geom_point(alpha = 0.2, color = 'blue', stroke = 0) +
+  geom_density2d(bins = 5, color = 'red')
+g3_2
+```
+
+(c) Hexagonal heatmap of bin counts
+```{r Q3 (c)}
+g3_3 <- ggplot(df_nyc, aes(tip_amount, fare_amount)) +
+  geom_hex(bins = c(30, 3))
+g3_3
+```
+
+(d) Square heatmap of bin counts 
+```{r Q3 (d)}
+g3_4 <- ggplot(df_nyc, aes(tip_amount, fare_amount)) +
+  geom_bin2d(bins = c(30, 20))
+g3_4
+```
+
+For all, adjust parameters to the levels that provide the best views of the data.
+
+(e) Describe noteworthy features of the data, using the "Movie ratings" example on page 82 (last page of Section 5.3) as a guide. 
+
+* Barriers - the fare amount never reaches 80 when the tip amount is more than 0. There is another barrier defined by a straight line that goes across (5,10) and (15, 40).
+* Clusters - There are two clusters of data points. One cluster is when the tip amount is 0; the frequency of fare amount reaches its peak when fare_amout = 10. The other cluster is when the tip amount is greater than 0; the tip amount is almost linear with the fare amount, and the frequency is peaked at around (4, 10).
+* Gaps - there is a gap between the two clusters described above.
+* Outliers - Near the first cluster (tip_amount = 0), there is an outlier at (0, 120), afew outliers above (0, 50). Near the second cluster (tip_amount > 0), there are some outliers when the tip amount is greater than 13, and some other outliers (such as the data points near (5, 50)) above the majority of the data points.
+* Conditional relations and correlations - these are described when we discuss the "Clusters".
+
+\newpage
+### 4. Olive Oil
+
+Data: `olives` dataset in **extracat** package
+```{r Q4 dataset}
+library(extracat)
+df_olives <- olives
+```
+
+(a) Draw a scatterplot matrix of the eight continuous variables. Which pairs of variables are strongly positively associated and which are strongly negatively associated?
+```{r Q4 (a)}
+library(GGally)
+ggpairs(df_olives, columns = 3:10, aes(alpha = 0.3, color = 'red'))
+```
+
+* Stronly positively associated - {palmitic, palmitoleic}, {palmitoleic, linoleic}
+
+* Stronly negatively associated - {palmitic, oleic}, {palmitoleic, oleic}, {oleic, linoleic}
+
+(b) Color the points by region.  What do you observe?
+```{r Q4 (b)}
+ggpairs(df_olives, columns = 3:10, mapping = aes(color = Region, alpha = 0.3))
+```
+When it's colored by region, the figure conveys more information on the association according to different regions.
+
+* Strongly positively correlated
+
+    + North region - {palmitoleic, linoleic}, {arachidic, linolenic}
+    + Sardina region - {stearic, linoleic}
+    + South region - {palmitic, palmitoleic}, {palmitic, linoleic}, {palmitoleic, linoleic}
+  
+* Strongly negatively correlated
+
+    + North region - {palmitoleic, oleic}, {oleic, stearic}, {linoleic, oleic}, {linoleic, linoleic}
+    + Sardina region - {palmitic, oleic}, {stearic, oleic}, {oleic, linoleic}
+    + South region - {palmitic, oleic}, {palmitoleic, oleic}, {oleic, linoleic}
+
+\newpage
+### 5. Wine
+
+Data: `wine` dataset in **pgmm** package
+
+(Recode the `Type` variable to descriptive names.)
+
+```{r Q5 dataset}
+library(pgmm)
+data(wine)
+df_wine <- wine
+df_wine$Type[df_wine$Type == 1] <- 'Barolo'
+df_wine$Type[df_wine$Type == 2] <- 'Grignolino'
+df_wine$Type[df_wine$Type == 3] <- 'Barbera'
+```
+(a) Use parallel coordinate plots to explore how the variables separate the wines by `Type`. Present the version that you find to be most informative. You do not need to include all of the variables.
+
+```{r Q5 (a)}
+ggparcoord(df_wine, columns = c(2, 4, 7, 12, 16, 17, 5, 18, 19, 6, 20:23, 25, 27), alphaLines = .6,
+           scale = "uniminmax", groupColumn = 1, splineFactor = 10) +
+  coord_flip()
+```
+(b) Explain what you discovered.
+We find that the three types of wines are different in containing the following types of chemicals.
+
+* Proline - blue is low, red is medium, green is high
+* 2-3-Butanediol - red is low, green and blue are high
+* OD280/OD315 of Flavanoids - red is low, green and blue are high
+* OD280/OD315 of Diluted Wines - red is low, blue is medium, green is high
+* Hue - red is low, green and blue are high
+* Color Intensity - blue is low, green is medium, red is high
+* Malic Acid - blue is low, green is medum, red is high
+* Proanthocyanins - red is low, green is high, blue spans from low to high
+* Non-flavanoid Phenols - grren is low, red is high, blue spans from low to high
+* Tartaric Acid - green and blue are low, red spans fro low to high
+* Flavanoids - red is low, green and blue are medium
+* Total Phenols - red is low, green is high, blue spans from low to high
+* Calcium - green is the lowest, red is slightly higher than green but still is low, blue is medium
+* Uronic Acids - green and blue are low, red is high
+* Fixed Acidity - green is low, red is high, blue spans from low to high
+* Alcohol - blue is low, red is medium, green is high
+
+
